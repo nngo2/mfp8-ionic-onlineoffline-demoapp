@@ -1,0 +1,4 @@
+/* Empty. Add your own CSS if you like */
+.ng-dirty.ng-invalid-required {
+	background-color: red;
+}
