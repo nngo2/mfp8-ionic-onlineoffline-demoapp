@@ -1,5 +1,5 @@
 angular.module('app.services', [])
-  .factory('LoaderSvc', ['$ionicLoading', '$timeout',
+  .factory('LoaderSvc', ['$ionicLoading', '$timeout',    
     function ($ionicLoading, $timeout) {
       return {
         show: function (text) {
@@ -29,9 +29,9 @@ angular.module('app.services', [])
       var credential = {
         username: '',
         isAuthenticated: false
-      }
-
-      return {
+      };
+      
+      var AuthApi = {
         clearAuth: function () {
           credential.username = '';
           credential.isAuthenticated = false;
@@ -46,5 +46,26 @@ angular.module('app.services', [])
           return defer.promise;
         }
       };
+
+      return AuthApi;
+    }
+  ])
+
+ .factory('DataSvc', ['$q',
+    function ($q) {
+
+      var DataApi = {
+        getUnsecuredData: function(name) {
+          var resourceRequest = new WLResourceRequest("/adapters/javaAdapter/resource/greet", WLResourceRequest.GET);
+          resourceRequest.setQueryParameter("name", name);
+          return resourceRequest.send();
+        },
+        getSecuredData: function() {
+          var resourceRequest = new WLResourceRequest("/adapters/ResourceAdapter/balance", WLResourceRequest.GET);
+          return resourceRequest.send();
+        }
+      };
+
+      return DataApi;
     }
   ])

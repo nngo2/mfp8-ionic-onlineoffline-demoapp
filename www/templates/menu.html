@@ -17,16 +17,16 @@
     </ion-header-bar>
     <ion-content>
       <ion-list>
-	    <ion-item menu-close ng-hide="isAuthenticated" ng-click="login()">
+	    <ion-item menu-close ng-show="!isAuthenticated()" ng-click="login()">
           Login
         </ion-item>
-        <ion-item menu-close href="#/app/main">
+        <ion-item menu-close href="#/app/home">
           Unsecured area
         </ion-item>
         <ion-item menu-close href="#/app/secured">
           Secured area
         </ion-item>
-        <ion-item menu-close ng-show="isAuthenticated" ng-click="logout()">
+        <ion-item menu-close ng-show="isAuthenticated()" ng-click="logout()">
           Logout
         </ion-item>
       </ion-list>

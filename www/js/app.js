@@ -3,7 +3,7 @@ angular.module('app', ['ionic', 'ngCordova', 'app.controllers', 'app.services'])
 	.run(function ($ionicPlatform, $rootScope, MFPPromise) {
 		$ionicPlatform.ready(function () {
 			// Hide the accessory bar by default (remove this to show the accessory bar above the keyboard or form inputs)
-			if (window.cordova && window.cordova.plugins.Keyboard) {
+			if (window.cordova && window.cordova.plugins && window.cordova.plugins.Keyboard) {
 				cordova.plugins.Keyboard.hideKeyboardAccessoryBar(true);
 				cordova.plugins.Keyboard.disableScroll(true);
 			}
@@ -12,14 +12,28 @@ angular.module('app', ['ionic', 'ngCordova', 'app.controllers', 'app.services'])
 				StatusBar.styleDefault();
 			}
 
+			MFPPromise.then(function () { WL.Logger.ctx({ pkg: 'io.ionic' }).debug('mfp and ionic are ready, safe to use WL.* APIs'); });
+
 			$rootScope.$on('$stateChangeError', function (event, toState, toParams, fromState, fromParams, error) {
 				if (error === AppConstants.Auth.RequiredAuth) {
-					event.preventDefault();
 					$rootScope.login();
 				}
 			});
+		});
+	})
 
-			MFPPromise.then(function () { WL.Logger.ctx({ pkg: 'io.ionic' }).debug('mfp and ionic are ready, safe to use WL.* APIs'); });
+	.run(function ($ionicPlatform, $rootScope, MFPPromise) {
+		$ionicPlatform.ready(function () {
+			MFPPromise.then(function () {
+				WL.App.getServerUrl(
+					function(url) {
+						$rootScope.serverUrl = url;
+					},
+					function(failureResponse) {
+						 WL.Logger.ctx({ pkg: 'WL->getServerUrl' }).debug(JSON.stringify(failureResponse));
+					}
+				);
+			});
 		});
 	})
 
@@ -37,27 +51,27 @@ angular.module('app', ['ionic', 'ngCordova', 'app.controllers', 'app.services'])
 		// Set up the various states which the app can be in.
 		// Each state's controller can be found in controllers.js
 		$stateProvider
-			.state('root', {
-				url: '/',
+			.state('app', {
+				url: '/app',
+				abstract: true,
 				templateUrl: 'templates/menu.html',
-				controller: 'AppCtrl',
-				cache: false
+				controller: 'AppCtrl'
 			})
-			.state('home', {
+			.state('app.home', {
 				url: '/home',
 				cache: false,
 				views: {
-					'home': {
+					'menuContent': {
 						templateUrl: 'templates/home.html',
 						controller: 'HomeCtrl'
 					}
 				}
 			})
-			.state('secured', {
+			.state('app.secured', {
 				url: '/secured',
 				cache: false,
 				views: {
-					'secured': {
+					'menuContent': {
 						templateUrl: 'templates/secured.html',
 						controller: 'Securedtrl'
 					}
@@ -69,16 +83,16 @@ angular.module('app', ['ionic', 'ngCordova', 'app.controllers', 'app.services'])
 				}
 			})
 
-		$urlRouterProvider.otherwise('/');
+		$urlRouterProvider.otherwise('/app/home');
 	});
-
 
 /*
 * Application wide contansts
 */
 var AppConstants = {
 	Auth: {
-		RequiredAuth: 'AUTH_REQUIRED'
+		RequiredAuth: 'AUTH_REQUIRED',
+		ShowLoginForm: 'showLoginForm'
 	}
 }
 
@@ -96,7 +110,7 @@ window.wlInitOptions = {
 	// For initialization options please refer to IBM MobileFirst Platform Foundation Knowledge Center.
 };
 
-window.MFPefer = angular.injector(['ng']).get('$q').defer();;
+window.MFPDefer = angular.injector(['ng']).get('$q').defer();;
 window.wlCommonInit = window.MFPDefer.resolve;
 window.MFPDefer.promise.then(function wlCommonInit() {
 	WL.Logger.ctx({ pkg: 'MFP wlCommonInit' }).debug('MobileFirst Client SDK Initilized');
