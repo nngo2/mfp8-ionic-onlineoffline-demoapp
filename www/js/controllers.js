@@ -4,7 +4,7 @@ angular.module('app.controllers', ['app.services'])
   * Login handler
   ***************************************************************************************************************************/
   .controller('AppCtrl', ['$rootScope', '$ionicModal', '$state', 'MFPPromise', 'AuthSvc',
-    function ($rootScope, $ionicModal, $timeout, MFPPromise, AuthSvc) {
+    function ($rootScope, $ionicModal, $state, MFPPromise, AuthSvc) {
 
       // With the new view caching in Ionic, Controllers are only called
       // when they are recreated or on app start, instead of every page change.
@@ -49,7 +49,7 @@ angular.module('app.controllers', ['app.services'])
         if (login.isOfflineLoggedIn) {
           user.isOfflineAuthenticated = login.isOfflineLoggedIn;
         }
-        Auth.setAuth(user);      
+        AuthSvc.setAuth(user);      
       }
 
       function setLoginMessage(msg) {
@@ -87,9 +87,14 @@ angular.module('app.controllers', ['app.services'])
         var isChallenged = false;
         var securityCheckName = AppConstants.Auth.SecurityCheckName;
         
+        // Define a static challenge handler
         UserLoginChallengeHandler = WL.Client.createSecurityCheckChallengeHandler(securityCheckName);
 
         UserLoginChallengeHandler.securityCheckName = securityCheckName;
+
+        UserLoginChallengeHandler.isChallenged = function(){
+          return isChallenged;
+        };
 
         UserLoginChallengeHandler.setChallenge = function(state) {
           isChallenged = state;
@@ -104,7 +109,7 @@ angular.module('app.controllers', ['app.services'])
                 statusMsg = statusMsg + "<br/>" + challenge.errorMsg;
             }
 
-            $rootScope.login({ischallenged : isChallenged, message : statusMsg});
+            $rootScope.login({isChallenged : isChallenged, message : statusMsg});
         };
 
         UserLoginChallengeHandler.handleSuccess = function(data) {
@@ -127,6 +132,7 @@ angular.module('app.controllers', ['app.services'])
         };
       });
 
+      // The default page once logged on ok
       $rootScope.gotoSecuredArea = function() {
         $state.go(AppConstants.UIState.Secured);
       }
@@ -157,7 +163,7 @@ angular.module('app.controllers', ['app.services'])
 
       // Reset auth status when logged out
       $rootScope.logout = function () {
-        Auth.clearAuth();
+        AuthSvc.clearAuth();
       };
 
       // Perform the login action when the user submits the login form
@@ -172,15 +178,17 @@ angular.module('app.controllers', ['app.services'])
         };  
 
         AuthSvc.login(loggingUser).then(
-          function(){ // online logged in ok
-            console.log('Logged in online successfully');
-            setAuthStatus({isLoggedIn : true}); // set online login status      
-            $rootScope.closeLogin();             
-            
-            // always do offline logon
-            
-            if (typeof callback === 'function') {
-              callback();  
+          function(){ // online logged in ok, do not process the login initiated by challenge handler 
+            if (!UserLoginChallengeHandler.isChallenged()) { 
+              console.log('Logged in online successfully');            
+              setAuthStatus({isLoggedIn : true}); // set online login status      
+              $rootScope.closeLogin();             
+              
+              // always do offline logon
+              
+              if (typeof callback === 'function') {
+                callback();  
+              }
             }
           },
           function(error){ //online logged in failed

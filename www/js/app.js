@@ -73,7 +73,7 @@ angular.module('app', ['ionic', 'ngCordova', 'app.controllers', 'app.services'])
 				views: {
 					'menuContent': {
 						templateUrl: 'templates/secured.html',
-						controller: 'Securedtrl'
+						controller: 'SecuredCtrl'
 					}
 				},
 				resolve: {

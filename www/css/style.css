@@ -4,23 +4,23 @@ input.ng-invalid {
     border: 2px red solid;
 }
 
-.isa_info, .isa_success, .isa_warning, .isa_error {
+.msg-info, .msg-success, .msg-warning, .msg-error {
     margin: 10px 0px;
     padding:12px;
 }
-.isa_info {
+.msg-info {
     color: #00529B;
     background-color: #BDE5F8;
 }
-.isa_success {
+.msg-success {
     color: #4F8A10;
     background-color: #DFF2BF;
 }
-.isa_warning {
+.msg-warning {
     color: #9F6000;
     background-color: #FEEFB3;
 }
-.isa_error {
+.msg-error {
     color: #D8000C;
     background-color: #FFBABA;
 }

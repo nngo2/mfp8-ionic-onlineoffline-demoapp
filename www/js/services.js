@@ -34,7 +34,7 @@ angular.module('app.services', [])
 
       function doRequireAuth(login) {
         var defer = $q.defer();
-        if (!credential.isOfflineAuthenticated) {
+        if (!credential.isAuthenticated) {
           defer.reject(AppConstants.Auth.RequiredAuth);
         } else {
           defer.resolve();
