@@ -17,7 +17,7 @@
     </ion-header-bar>
     <ion-content>
       <ion-list>
-	    <ion-item menu-close ng-show="!isAuthenticated()" ng-click="login()">
+	    <ion-item menu-close ng-show="!isAuthenticated()" ng-click="login({isChallenged : false})">
           Login
         </ion-item>
         <ion-item menu-close href="#/app/home">

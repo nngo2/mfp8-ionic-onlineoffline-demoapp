@@ -16,7 +16,7 @@ angular.module('app', ['ionic', 'ngCordova', 'app.controllers', 'app.services'])
 
 			$rootScope.$on('$stateChangeError', function (event, toState, toParams, fromState, fromParams, error) {
 				if (error === AppConstants.Auth.RequiredAuth) {
-					$rootScope.login();
+					$rootScope.login({isChallenged : false});
 				}
 			});
 		});
@@ -57,7 +57,7 @@ angular.module('app', ['ionic', 'ngCordova', 'app.controllers', 'app.services'])
 				templateUrl: 'templates/menu.html',
 				controller: 'AppCtrl'
 			})
-			.state('app.home', {
+			.state(AppConstants.UIState.Home, {
 				url: '/home',
 				cache: false,
 				views: {
@@ -67,7 +67,7 @@ angular.module('app', ['ionic', 'ngCordova', 'app.controllers', 'app.services'])
 					}
 				}
 			})
-			.state('app.secured', {
+			.state(AppConstants.UIState.Secured, {
 				url: '/secured',
 				cache: false,
 				views: {
@@ -92,8 +92,13 @@ angular.module('app', ['ionic', 'ngCordova', 'app.controllers', 'app.services'])
 var AppConstants = {
 	Auth: {
 		RequiredAuth: 'AUTH_REQUIRED',
-		ShowLoginForm: 'showLoginForm'
-	}
+		ShowLoginForm: 'showLoginForm',
+		SecurityCheckName: 'UserLogin'
+	},
+	UIState: {
+		Home: 'app.home',
+		Secured : 'app.secured'
+	} 
 }
 
 /*
