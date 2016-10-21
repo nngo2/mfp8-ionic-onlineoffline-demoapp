@@ -25,16 +25,20 @@ angular.module('app.services', [])
   ])
 
   .factory('AuthSvc', ['$q',
-    function ($q) {
+    function ($q) {    
       var credential = {
         username: '',
         isAuthenticated: false,
         isOfflineAuthenticated: false
       };
 
-      function doRequireAuth(login) {
+      function isAuthenticated() {
+        return credential.isOfflineAuthenticated;
+      } 
+
+      function doRequireAuth() {
         var defer = $q.defer();
-        if (!credential.isAuthenticated) {
+        if (!isAuthenticated()) {
           defer.reject(AppConstants.Auth.RequiredAuth);
         } else {
           defer.resolve();
@@ -42,8 +46,8 @@ angular.module('app.services', [])
         return defer.promise;
       }
 
-      function doLogout() {
-        return WLAuthorizationManager.logout(UserLoginChallengeHandler.SecurityCheckName).then(
+      function doLogout(login) {
+        return WLAuthorizationManager.logout(login.securityCheckName).then(
           function () {
             WL.Logger.ctx({ pkg: 'MFP WLAuthorizationManager' }).debug("logout onSuccess");
           },
@@ -58,7 +62,7 @@ angular.module('app.services', [])
           UserLoginChallengeHandler.submitChallengeAnswer({ 'username': login.username, 'password': login.password });
           defer.resolve();
         } else {
-          WLAuthorizationManager.login(UserLoginChallengeHandler.SecurityCheckName, 
+          WLAuthorizationManager.login(login.securityCheckName, 
             { 'username': login.username, 'password': login.password }).then(
             function () {
               WL.Logger.ctx({ pkg: 'MFP WLAuthorizationManager' }).debug("login onSuccess");
@@ -73,28 +77,38 @@ angular.module('app.services', [])
       }
 
       var AuthApi = {
-        currentAuth: credential,
-        setAuth: function (user) {
-          angular.copy(user, credential);
+        setAuth: function(user) {
+          if (user.username) {
+            credential.username = user.username;
+          }
+          if (user.isAuthenticated){
+            credential.isAuthenticated = user.isAuthenticated
+          }
+          if (user.isOfflineAuthenticated){
+            credential.isOfflineAuthenticated = user.isOfflineAuthenticated
+          }          
         },
-        clearAuth: function () {
+        clearAuth: function() {
           credential.username = '';
           credential.isAuthenticated = false;
           credential.isOfflineAuthenticated = false;
         },
-        requireAuth: function () {
+        requireAuth: function() {
           return doRequireAuth();
         },
-        isOfflineAuth: function () {
+        isOfflineAuth: function() {
           return credential.isOfflineAuthenticated;
         },
-        isAuth: function () {
+        isAuth: function() {
           return credential.isAuthenticated;
         },
-        login: function (login) {
+        isAuthenticated: function() {
+          return isAuthenticated();
+        }, 
+        login: function(login) {
           return doLogin(login);
         },
-        logout: function () {
+        logout: function(login) {
           return doLogout(login);
         }        
       };
@@ -119,5 +133,60 @@ angular.module('app.services', [])
       };
 
       return DataApi;
+    }
+  ])
+
+  .factory('JsonStoreSvc', ['$q',
+    function ($q) {
+      // collection to check the first time logon
+      var credCollectionName = AppConstants.JsonStore.UserCredentials;
+      var collections = {
+        userCredentials : {
+          searchFields : {
+            collectionNotEmpty: 'string'
+          }
+        }
+      };
+
+      var JsonStoreApi = {
+        connectOnline: function(username, password) {
+          return WL.JSONStore.init(collections, {password:password, username:username, localKeyGen:true})
+            .then(function() {   		
+              return WL.JSONStore.get(credCollectionName).count();
+            })	
+            .then(function(countResult) {
+              if (countResult == 0) { // The JSONStore collection is empty, populate it.                
+                var data = [{collectionNotEmpty:"true"}];
+                return WL.JSONStore.get(credCollectionName).add(data);
+              }
+            });
+        },
+        connectOffline: function(username, password){
+          var defer = $q.defer();
+          WL.JSONStore.init(collections, {password:password, username:username, localKeyGen:true})	
+		    	.then(function() {
+		    		WL.JSONStore.get(credCollectionName).count()
+		    		.then(function(countResult) {
+		    			if (countResult == 0) {
+		    				WL.JSONStore.destroy(username);
+                console.log('Destroyed JSONStore, require online mode');
+                defer.reject(AppConstants.JsonStore.FirstTimeLogin);
+					    } else {
+                defer.resolve();
+					    }
+		    		})
+		    	})
+		    	.fail(function(error) {
+            console.log('Failed to logon Db: ' +  JSON.stringify(error));
+            defer.reject(AppConstants.JsonStore.InvalidLogin);
+		    	})
+          return defer.promise;
+        },
+        disconnect: function() {
+          return WL.JSONStore.closeAll();
+        }
+      };
+
+      return JsonStoreApi;
     }
   ])

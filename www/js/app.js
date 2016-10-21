@@ -96,8 +96,13 @@ var AppConstants = {
 		SecurityCheckName: 'UserLogin'
 	},
 	UIState: {
-		Home: 'app.home',
+		Home : 'app.home',
 		Secured : 'app.secured'
+	},
+	JsonStore: {
+		UserCredentials : 'userCredentials',
+		FirstTimeLogin : 'firstTimeLogin',
+		InvalidLogin : 'invalidLogin'
 	} 
 }
 
@@ -107,7 +112,11 @@ var AppConstants = {
 window.Messages = {
 	// Add here your messages for the default language.
 	// Generate a similar file with a language suffix containing the translated messages.
-	// key1 : message1,
+	Login : {
+		UseOldPassword : 'Could not logon Db with the online\\current password.\n Use last password to logon. \n',
+		ErrFirstTimeLogin : 'This is the first time login, must be online.',
+		ErrInvalidLogin : 'Invalid login'
+	}		
 };
 
 window.wlInitOptions = {
