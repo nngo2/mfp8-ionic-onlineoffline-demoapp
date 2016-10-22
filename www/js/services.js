@@ -59,24 +59,24 @@ angular.module('app.services', [])
       function doLogin(login) {
         var defer = $q.defer();
 
-        if (login.isOffline) { // do not authenticate with the server, client is in offline mode
+        if (login.isOffline) { // do not authenticate with the server when client is in offline mode
           defer.reject({errorCode : ''});
-        }
-
-        if (login.isChallenged) {
-          UserLoginChallengeHandler.submitChallengeAnswer({ 'username': login.username, 'password': login.password });
-          defer.resolve();
         } else {
-          WLAuthorizationManager.login(login.securityCheckName, 
-            { 'username': login.username, 'password': login.password }).then(
-            function () {
-              WL.Logger.ctx({ pkg: 'MFP WLAuthorizationManager' }).debug("login onSuccess");
-              defer.resolve();
-            },
-            function (response) {
-              WL.Logger.ctx({ pkg: 'MFP WLAuthorizationManager' }).debug("login onFailure: " + JSON.stringify(response));
-              defer.reject(response);
-            });
+          if (login.isChallenged) {
+            UserLoginChallengeHandler.submitChallengeAnswer({ 'username': login.username, 'password': login.password });
+            defer.resolve();
+          } else {
+            WLAuthorizationManager.login(login.securityCheckName, 
+              { 'username': login.username, 'password': login.password }).then(
+              function () {
+                WL.Logger.ctx({ pkg: 'MFP WLAuthorizationManager' }).debug("login onSuccess");
+                defer.resolve();
+              },
+              function (response) {
+                WL.Logger.ctx({ pkg: 'MFP WLAuthorizationManager' }).debug("login onFailure: " + JSON.stringify(response));
+                defer.reject(response);
+              });
+          }
         }
         
         return defer.promise;

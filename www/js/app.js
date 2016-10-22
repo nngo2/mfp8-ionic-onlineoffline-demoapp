@@ -103,7 +103,9 @@ var AppConstants = {
 	JsonStore: {
 		UserCredentials : 'userCredentials',
 		FirstTimeLogin : 'firstTimeLogin',
-		InvalidLogin : 'invalidLogin'
+		InvalidLogin : 'invalidLogin',
+		InvalidKeyMsg: 'INVALID_KEY_ON_PROVISION',
+		InvalidKeyErr: -3		
 	} 
 }
 

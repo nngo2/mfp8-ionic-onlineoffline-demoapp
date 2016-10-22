@@ -228,30 +228,35 @@ angular.module('app.controllers', ['app.services'])
 
             if (!UserLoginChallengeHandler.isChallenged()) {        
               setAuthStatus({isLoggedIn : true}); // set online login status      
-                    
-              // always do offline logon
+
               var password = $rootScope.loginUser.useOldPassword? $rootScope.loginUser.oldPassword : $rootScope.loginUser.password;
 
               LoaderSvc.show();
-              JsonStoreSvc.connectOnline($rootScope.loginUser.username, password).then(
+              JsonStoreSvc.disconnect().then(
                 function() {
-                  LoaderSvc.hide();
-                  console.log('Logged in Db successfully');   
-                  setAuthStatus({isOfflineLoggedIn : true});  
-                  $rootScope.closeLogin();
-                  resetLogin();                         
-                },
-                function(error) { // could not logon Db offline
-                  LoaderSvc.hide();
-                  JsonStoreSvc.disconnect();
-                  $rootScope.loginUser.useOldPassword = true;
-                  if (error === AppConstants.JsonStore.FirstTimeLogin) {
-                    setLoginMessage(AppConstants.JsonStore.FirstTimeLogin);
-                  } else if (error === AppConstants.JsonStore.InvalidLogin) {
-                    setLoginMessage(Messages.Login.UseOldPassword);
-                  }
-                }
-              ); 
+                  JsonStoreSvc.connectOnline($rootScope.loginUser.username, password).then(
+                    function() {
+                      LoaderSvc.hide();
+                      console.log('Logged in Db successfully');   
+                      setAuthStatus({isOfflineLoggedIn : true});  
+                      $rootScope.closeLogin();
+                      resetLogin();                         
+                    },
+                    function(error) { // could not logon Db offline
+                      LoaderSvc.hide();
+                      JsonStoreSvc.disconnect();
+                      if (error === AppConstants.JsonStore.FirstTimeLogin) {
+                        setLoginMessage(Messages.Login.ErrFirstTimeLogin);
+                      } else if (error.msg === AppConstants.JsonStore.InvalidKeyMsg 
+                        || error.err === AppConstants.JsonStore.InvalidKeyErr) { // JSONStore invalid key
+                        $rootScope.loginUser.useOldPassword = true;                    
+                        setLoginMessage(Messages.Login.UseOldPassword);
+                      } else {
+                        setLoginMessage(Messages.Login.ErrInvalidLogin);
+                      }
+                    }
+                  ); 
+              });              
               
               if (typeof callback === 'function') {
                 callback();  
@@ -262,32 +267,41 @@ angular.module('app.controllers', ['app.services'])
           // 1. offline mode
           // 2. online authentication failed
           function(error){           
-            console.log('Failed to login online');
+            console.log('Failed to login online');              
+            setAuthStatus({isLoggedIn : false}); // set online login status      
 
             // do not logon offline if the server refused the credential (returned 403 code)
             if (error.errorCode != AppConstants.Auth.ForbiddenCode) {
               var password = $rootScope.loginUser.useOldPassword? $rootScope.loginUser.oldPassword : $rootScope.loginUser.password;
 
               LoaderSvc.show()
-              JsonStoreSvc.connectOffline($rootScope.loginUser.username, password).then(
+              JsonStoreSvc.disconnect().then(
                 function() {
-                  LoaderSvc.hide();
-                  console.log('Logged in Db successfully');   
-                  setAuthStatus({isOfflineLoggedIn : true});  
-                  $rootScope.closeLogin();        
-                  resetLogin();                     
-                },
-                function(error) { // ask old password if could not open Db with the online\current password
-                  LoaderSvc.hide();
-                  JsonStoreSvc.disconnect();                
-                  $rootScope.loginUser.useOldPassword = true;
-                  setLoginMessage(Messages.Login.UseOldPassword);
-                }
-              ); 
+                  JsonStoreSvc.connectOffline($rootScope.loginUser.username, password).then(
+                    function() {
+                      LoaderSvc.hide();
+                      console.log('Logged in Db successfully');   
+                      setAuthStatus({isOfflineLoggedIn : true});  
+                      $rootScope.closeLogin();        
+                      resetLogin();                     
+                    },
+                    function(error) {
+                      LoaderSvc.hide();
+                      JsonStoreSvc.disconnect();                                   
+                      if (error === AppConstants.JsonStore.FirstTimeLogin) {
+                        setLoginMessage(Messages.Login.ErrFirstTimeLogin);
+                      } else  {
+                        setLoginMessage(Messages.Login.ErrInvalidLogin);
+                      }
+                    }
+                  ); 
+              });
 
               if (typeof callback === 'function') {
                 callback();  
               }
+            } else {
+              setLoginMessage(Messages.Login.ErrInvalidLogin);
             }
           }
         ); 
