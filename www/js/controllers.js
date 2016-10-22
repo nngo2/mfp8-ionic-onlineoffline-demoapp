@@ -3,8 +3,8 @@ angular.module('app.controllers', ['app.services'])
   /**************************************************************************************************************************
   * Login handler
   ***************************************************************************************************************************/
-  .controller('AppCtrl', ['$rootScope', '$ionicModal', '$state', 'MFPPromise', 'AuthSvc', 'JsonStoreSvc',
-    function ($rootScope, $ionicModal, $state, MFPPromise, AuthSvc, JsonStoreSvc) {
+  .controller('AppCtrl', ['$rootScope', '$ionicModal', '$state', 'MFPPromise', 'AuthSvc', 'JsonStoreSvc', 'LoaderSvc',
+    function ($rootScope, $ionicModal, $state, MFPPromise, AuthSvc, JsonStoreSvc, LoaderSvc) {
 
       // With the new view caching in Ionic, Controllers are only called
       // when they are recreated or on app start, instead of every page change.
@@ -19,8 +19,6 @@ angular.module('app.controllers', ['app.services'])
         password: '',
         oldPassword: '',
         useOldPassword: false,
-        isLoggedIn: false,
-        isOfflineLoggedIn: false,
         isLoggingIn: false,
         loginMessage: '',
         isChallenged: false,
@@ -31,9 +29,7 @@ angular.module('app.controllers', ['app.services'])
         $rootScope.loginUser.password = '';
         $rootScope.loginUser.oldPassword = '';
         $rootScope.loginUser.useOldPassword = false;
-        $rootScope.loginUser.isLoggedIn = false;
         $rootScope.loginUser.isLoggingIn = false;
-        $rootScope.loginUser.isOfflineLoggedIn = false;
         $rootScope.loginUser.loginMessage = '';
         $rootScope.loginUser.isChallenged = false;
       }
@@ -72,7 +68,7 @@ angular.module('app.controllers', ['app.services'])
       $rootScope.safeApply = function(fn) {
         var phase = this.$root.$$phase;
         if(phase == '$apply' || phase == '$digest') {
-          if(fn && (typeof(fn) === 'function')) {
+          if(typeof fn === 'function') {
             fn();
           }
         } else {
@@ -104,8 +100,9 @@ angular.module('app.controllers', ['app.services'])
             $rootScope.loginUser.isChallenged = state;
           };
 
-          UserLoginChallengeHandler.handleChallenge = function(challenge) {
-              WL.Logger.ctx({ pkg: 'MFP UserLoginChallengeHandler' }).debug("handleChallenge");
+          UserLoginChallengeHandler.handleChallenge = function(challenge) {            
+              WL.Logger.ctx({ pkg: 'MFP UserLoginChallengeHandler' }).debug("handleChallenge");           
+              
               UserLoginChallengeHandler.setChallenge(true); 
 
               var statusMsg = "Remaining Attempts: " + challenge.remainingAttempts;
@@ -122,21 +119,25 @@ angular.module('app.controllers', ['app.services'])
 
           UserLoginChallengeHandler.handleSuccess = function(data) {
               WL.Logger.ctx({ pkg: 'MFP UserLoginChallengeHandler' }).debug("handleSuccess");
+
               if (isChallenged) {
                 setAuthStatus({isLoggedIn : true}); // set online login status      
                 if (isLoggingIn()) {
                   $rootScope.closeLogin();
                 }                                         
               }           
+              
               UserLoginChallengeHandler.setChallenge(false); 
           };
 
-          UserLoginChallengeHandler.handleFailure = function(error) {
-              WL.Logger.ctx({ pkg: 'MFP UserLoginChallengeHandler' }).debug("handleFailure: " + error.failure);
-              if (isChallenged && isLoggingIn()) {
-                setLoginMessage(error.failure);
-              }
-              //UserLoginChallengeHandler.setChallenge(false); 
+          UserLoginChallengeHandler.handleFailure = function(error) {       
+            WL.Logger.ctx({ pkg: 'MFP UserLoginChallengeHandler' }).debug("handleFailure: " + error.failure);
+
+            if (isChallenged && isLoggingIn()) {
+              setLoginMessage(error.failure);
+            }
+            
+            UserLoginChallengeHandler.setChallenge(false); 
           };  
       });
 
@@ -172,8 +173,12 @@ angular.module('app.controllers', ['app.services'])
       $rootScope.closeLogin = function() {
         if (UserLoginChallengeHandler.isChallenged()){
           UserLoginChallengeHandler.cancel();
+          UserLoginChallengeHandler.setChallenge(false); 
         }      
-        $rootScope.modal.hide();        
+        $rootScope.modal.hide();
+        $rootScope.loginUser.useOldPassword = false;
+        $rootScope.loginUser.oldPassword = '';
+        $rootScope.loginUser.password = '';
       };
 
       // Reset auth status when logged out
@@ -187,7 +192,7 @@ angular.module('app.controllers', ['app.services'])
         };  
         AuthSvc.logout(loggedUser);
 
-        //offline logout
+        // offline logout
         JsonStoreSvc.disconnect();
 
         // clean login data
@@ -212,30 +217,39 @@ angular.module('app.controllers', ['app.services'])
           username: $rootScope.loginUser.username,
           password: $rootScope.loginUser.password,
           isChallenged: $rootScope.loginUser.isChallenged,
-          securityCheckName: $rootScope.loginUser.securityCheckName
+          securityCheckName: $rootScope.loginUser.securityCheckName,
+          isOffline: $rootScope.loginUser.useOldPassword? true : false
         };  
 
         AuthSvc.login(loggingUser).then(
-          // online logged in ok           
-          function(){ 
-            if (!UserLoginChallengeHandler.isChallenged()) { 
-              console.log('Logged in online successfully');            
+          // online logged in ok, do not proceed if it is still in handleChallenge()           
+          function(){             
+            console.log('Logged in online successfully');                 
+
+            if (!UserLoginChallengeHandler.isChallenged()) {        
               setAuthStatus({isLoggedIn : true}); // set online login status      
                     
               // always do offline logon
               var password = $rootScope.loginUser.useOldPassword? $rootScope.loginUser.oldPassword : $rootScope.loginUser.password;
 
+              LoaderSvc.show();
               JsonStoreSvc.connectOnline($rootScope.loginUser.username, password).then(
                 function() {
+                  LoaderSvc.hide();
                   console.log('Logged in Db successfully');   
                   setAuthStatus({isOfflineLoggedIn : true});  
                   $rootScope.closeLogin();
                   resetLogin();                         
                 },
-                function(error) { // ask old password if could not open Db with the online\current password
+                function(error) { // could not logon Db offline
+                  LoaderSvc.hide();
                   JsonStoreSvc.disconnect();
                   $rootScope.loginUser.useOldPassword = true;
-                  setLoginMessage(Messages.Login.UseOldPassword);
+                  if (error === AppConstants.JsonStore.FirstTimeLogin) {
+                    setLoginMessage(AppConstants.JsonStore.FirstTimeLogin);
+                  } else if (error === AppConstants.JsonStore.InvalidLogin) {
+                    setLoginMessage(Messages.Login.UseOldPassword);
+                  }
                 }
               ); 
               
@@ -247,22 +261,24 @@ angular.module('app.controllers', ['app.services'])
           // online logged is failed, this could be either:
           // 1. offline mode
           // 2. online authentication failed
-          function(error){            
+          function(error){           
             console.log('Failed to login online');
 
-            if (!UserLoginChallengeHandler.isChallenged()) {
-              // always do offline logon
+            // do not logon offline if the server refused the credential (returned 403 code)
+            if (error.errorCode != AppConstants.Auth.ForbiddenCode) {
               var password = $rootScope.loginUser.useOldPassword? $rootScope.loginUser.oldPassword : $rootScope.loginUser.password;
 
+              LoaderSvc.show()
               JsonStoreSvc.connectOffline($rootScope.loginUser.username, password).then(
                 function() {
-                  alert('Logged in Db successfully');
+                  LoaderSvc.hide();
                   console.log('Logged in Db successfully');   
                   setAuthStatus({isOfflineLoggedIn : true});  
                   $rootScope.closeLogin();        
                   resetLogin();                     
                 },
                 function(error) { // ask old password if could not open Db with the online\current password
+                  LoaderSvc.hide();
                   JsonStoreSvc.disconnect();                
                   $rootScope.loginUser.useOldPassword = true;
                   setLoginMessage(Messages.Login.UseOldPassword);

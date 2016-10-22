@@ -93,7 +93,8 @@ var AppConstants = {
 	Auth: {
 		RequiredAuth: 'AUTH_REQUIRED',
 		ShowLoginForm: 'showLoginForm',
-		SecurityCheckName: 'UserLogin'
+		SecurityCheckName: 'UserLogin',
+		ForbiddenCode: 403
 	},
 	UIState: {
 		Home : 'app.home',
@@ -113,7 +114,7 @@ window.Messages = {
 	// Add here your messages for the default language.
 	// Generate a similar file with a language suffix containing the translated messages.
 	Login : {
-		UseOldPassword : 'Could not logon Db with the online\\current password.\n Use last password to logon. \n',
+		UseOldPassword : 'Could not logon Db with the online\\current password.\n Use the last password to logon. \n',
 		ErrFirstTimeLogin : 'This is the first time login, must be online.',
 		ErrInvalidLogin : 'Invalid login'
 	}		

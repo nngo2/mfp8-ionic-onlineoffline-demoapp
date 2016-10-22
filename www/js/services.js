@@ -15,7 +15,7 @@ angular.module('app.services', [])
         },
         toggle: function (text, timeout) {
           var that = this;
-          that.show(text);
+          that.show(text || 'Loading...');
           $timeout(function () {
             that.hide();
           }, timeout || 3000);
@@ -58,6 +58,11 @@ angular.module('app.services', [])
 
       function doLogin(login) {
         var defer = $q.defer();
+
+        if (login.isOffline) { // do not authenticate with the server, client is in offline mode
+          defer.reject({errorCode : ''});
+        }
+
         if (login.isChallenged) {
           UserLoginChallengeHandler.submitChallengeAnswer({ 'username': login.username, 'password': login.password });
           defer.resolve();
@@ -73,6 +78,7 @@ angular.module('app.services', [])
               defer.reject(response);
             });
         }
+        
         return defer.promise;
       }
 
