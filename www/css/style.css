@@ -1,7 +1,7 @@
 /* Empty. Add your own CSS if you like */
 input.ng-invalid { 
-    background:red;
-    border: 2px red solid;
+    background:#FFBABA;
+    border: 1px #D8000C;
 }
 
 .msg-info, .msg-success, .msg-warning, .msg-error {
