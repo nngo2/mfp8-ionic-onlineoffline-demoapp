@@ -25,6 +25,10 @@
     <plugin name="cordova-plugin-splashscreen" spec="~4.0.0" />
     <plugin name="cordova-plugin-statusbar" spec="~2.2.0" />
     <plugin name="ionic-plugin-keyboard" spec="~2.2.1" />
+    <platform name="android">
+        <preference name="android-minSdkVersion" value="15" />
+        <preference name="android-targetSdkVersion" value="21" />
+    </platform>
     <mfp:android>
         <mfp:sdkChecksum>1638037605</mfp:sdkChecksum>
         <mfp:appChecksum>0</mfp:appChecksum>

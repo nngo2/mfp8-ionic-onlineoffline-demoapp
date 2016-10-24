@@ -22,17 +22,82 @@ angular.module('app', ['ionic', 'ngCordova', 'app.controllers', 'app.services'])
 		});
 	})
 
-	.run(function ($ionicPlatform, $rootScope, MFPPromise) {
+	.run(function ($ionicPlatform, $rootScope, $cordovaDialogs, MFPPromise) {
 		$ionicPlatform.ready(function () {
 			MFPPromise.then(function () {
+				$rootScope.pushRegistered = false; // in case we could not unregister, do register again
+				
 				WL.App.getServerUrl(
 					function(url) {
 						$rootScope.serverUrl = url;
 					},
 					function(failureResponse) {
-						 WL.Logger.ctx({ pkg: 'WL->getServerUrl' }).debug(JSON.stringify(failureResponse));
+						console.log(JSON.stringify(failureResponse));
 					}
 				);
+
+				$rootScope.notificationReceived = function(msg) { // handle default alert message
+					if (msg && msg.alert) {
+						$cordovaDialogs.alert(msg.alert, 'Received notification', 'OK')			
+					} else {
+						console.log(JSON.stringify(msg));
+					}			
+				};
+
+				$rootScope.registerDevice = function registerDevice() {
+					if ($rootScope.pushInitialized && !$rootScope.pushRegistered){
+						WLAuthorizationManager.obtainAccessToken(AppConstants.Push.Scope).then(
+							function(token) {
+								MFPPush.registerDevice(
+									null,
+									function(successResponse) {
+										console.log("MFP Push: Successfully registered device: " + successResponse);
+										$rootScope.pushRegistered = true;	
+									}, 
+									function(failureResponse) {
+										console.log("MFP Push: Failed to register device:" + JSON.stringify(failureResponse));
+									}
+								)
+							}
+						);
+					}
+				};
+
+				$rootScope.unregisterDevice = function unregisterDevice() {
+					if ($rootScope.pushRegistered){
+						WLAuthorizationManager.obtainAccessToken(AppConstants.Push.Scope).then(
+							function(token) {
+								MFPPush.unregisterDevice(
+									function(successResponse) {
+										console.log("MFP Push: Successfully unregistered device: " + successResponse);
+										$rootScope.pushRegistered = false;	
+									}, 
+									function(failureResponse) {
+										console.log("MFP Push: Failed to unregister device:" + JSON.stringify(failureResponse));
+									}
+								)
+							}
+						);
+					}
+				};				
+
+				MFPPush.initialize(
+					function(successResponse) {						
+						console.log("MFP Push: Successfully intialized");
+						MFPPush.isPushSupported(
+							function(successResponse) {
+								console.log("MFP Push is supported: " + successResponse);
+								$rootScope.pushInitialized = true;
+								MFPPush.registerNotificationsCallback($rootScope.notificationReceived);
+							}, 
+							function(failureResponse) {
+								console.log("MFP Push is unsupported : " + JSON.stringify(failureResponse));
+							}
+						);						
+					}, 
+					function(failureResponse) {
+						console.log("MFP Push: Failed to initialize");
+				});
 			});
 		});
 	})
@@ -94,7 +159,8 @@ var AppConstants = {
 		RequiredAuth: 'AUTH_REQUIRED',
 		ShowLoginForm: 'showLoginForm',
 		SecurityCheckName: 'UserLogin',
-		ForbiddenCode: 403
+		ForbiddenCode: 403,
+		AccessRestricted : 'accessRestricted'
 	},
 	UIState: {
 		Home : 'app.home',
@@ -106,6 +172,9 @@ var AppConstants = {
 		InvalidLogin : 'invalidLogin',
 		InvalidKeyMsg: 'INVALID_KEY_ON_PROVISION',
 		InvalidKeyErr: -3		
+	},
+	Push : {
+		Scope : 'push.mobileclient' 
 	} 
 }
 

@@ -1,5 +1,13 @@
 <ion-view view-title="Secured landing page" hide-back-button="true">
 	<ion-content>
 		<h4>{{hello}}</h4>
+		<div class="list">	
+			<label class="item">
+				<button class="button button-block button-assertive" ng-click="registerDevice()" ng-disabled="pushRegistered" type="submit">Register Device</button>
+			</label>
+			<label class="item">
+				<button class="button button-block button-assertive" ng-click="unregisterDevice()" ng-disabled="!pushRegistered" type="submit">Unregister Device</button>
+			</label>
+		</div>	
 	</ion-content>
 </ion-view>

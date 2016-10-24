@@ -185,6 +185,9 @@ angular.module('app.controllers', ['app.services'])
       $rootScope.logout = function(callback) {     
         console.log('Doing logout', $rootScope.loginUser);
 
+        // do not listen message if logged out
+        $rootScope.unregisterDevice();
+
         // online logout        
         var loggedUser = {
           username: $rootScope.loginUser.username,
@@ -198,7 +201,7 @@ angular.module('app.controllers', ['app.services'])
         // clean login data
         AuthSvc.clearAuth(); 
         resetLogin();
-        
+
         if (typeof callback === 'function') {
           callback();
         }
@@ -227,7 +230,8 @@ angular.module('app.controllers', ['app.services'])
             console.log('Logged in online successfully');                 
 
             if (!UserLoginChallengeHandler.isChallenged()) {        
-              setAuthStatus({isLoggedIn : true}); // set online login status      
+              setAuthStatus({isLoggedIn : true}); // set online login status   
+              $rootScope.registerDevice(); // only listen for push message if preemptive online login ok                   
 
               var password = $rootScope.loginUser.useOldPassword? $rootScope.loginUser.oldPassword : $rootScope.loginUser.password;
 
@@ -330,18 +334,25 @@ angular.module('app.controllers', ['app.services'])
       };
 
       $scope.getSecuredData = function () { // this uses the MFP ResourceAdapter example in PinCodeCordova
-        DataSvc.getSecuredData().then(
-          function (successResponse) {
-            $scope.$apply(function(){
-              $scope.hello = successResponse.responseText;
-            });            
+        WLAuthorizationManager.obtainAccessToken(AppConstants.Auth.AccessRestricted).then(
+          function(token){
+            DataSvc.getSecuredData().then(
+              function (successResponse) {
+                $scope.$apply(function(){
+                  $scope.hello = successResponse.responseText;
+                });            
+              },
+              function (failureResponse) {
+                $scope.$apply(function(){
+                  $scope.hello = JSON.stringify(failureResponse);
+                });            
+              }
+            );
           },
-          function (failureResponse) {
-            $scope.$apply(function(){
-              $scope.hello = JSON.stringify(failureResponse);
-            });            
+          function(error) {
+            console.log("Failed to obtain access token: " + JSON.stringify(error));
           }
-        );
+        ); 
       };
 
     }])
