@@ -187,28 +187,21 @@ angular.module('app.controllers', ['app.services'])
        
         JsonStoreSvc.disconnect(); // offline logout
 
-        $rootScope.unregisterDevice().then( // online logout
-          function(){
-            doOnlineLogout();
-          }, function() {
-            doOnlineLogout();
-          });
+        $rootScope.unregisterDevice().finally(function() { // online logout
+          var loggedUser = {
+            username: $rootScope.loginUser.username,
+            securityCheckName: $rootScope.loginUser.securityCheckName
+          };  
+          
+          AuthSvc.logout(loggedUser);        
+          AuthSvc.clearAuth(); // reset auth state
+          resetLogin(); // clear form login data
+
+          if (typeof callback === 'function') {
+            callback();
+          }           
+        });
       };
-
-      function doOnlineLogout() { 
-        var loggedUser = {
-          username: $rootScope.loginUser.username,
-          securityCheckName: $rootScope.loginUser.securityCheckName
-        };  
-        
-        AuthSvc.logout(loggedUser);        
-        AuthSvc.clearAuth(); // reset auth state
-        resetLogin(); // clear form login data
-
-        if (typeof callback === 'function') {
-          callback();
-        }
-      }
 
       // Perform the login action when the user submits the login form
       $rootScope.doLogin = function (form, callback) {
