@@ -15,8 +15,8 @@ npm install -g mfpdev-cli
 
 3/ Set up project's platform and plugins: go to the project directory
 
-bower install ngCordova --save
-cordova platform add android
-cordova plugin add cordova-plugin-mfp
-cordova plugin add cordova-plugin-mfp-jsonstore
-cordova plugin add cordova-plugin-mfp-push
+bower install ngCordova --save </br>
+cordova platform add android </br>
+cordova plugin add cordova-plugin-mfp </br>
+cordova plugin add cordova-plugin-mfp-jsonstore </br>
+cordova plugin add cordova-plugin-mfp-push </br>
