@@ -7,7 +7,7 @@ built upon this template, should be working on its local JSONStore once users lo
 1/ Set up Ionic and Cordova and tools
 
 npm install -g bower gulp
-npm install -g ionic@1.x cordova ngCordova
+npm install -g ionic@1.x cordova
 
 2/ Set up MFP tools 
 
