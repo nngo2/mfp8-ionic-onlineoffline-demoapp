@@ -22,7 +22,7 @@ angular.module('app', ['ionic', 'ngCordova', 'app.controllers', 'app.services'])
 		});
 	})
 
-	.run(function ($ionicPlatform, $rootScope, $cordovaDialogs, MFPPromise) {
+	.run(function ($q, $ionicPlatform, $rootScope, $cordovaDialogs, MFPPromise) {
 		$ionicPlatform.ready(function () {
 			MFPPromise.then(function () {
 				$rootScope.pushRegistered = false; // in case we could not unregister, do register again
@@ -64,21 +64,28 @@ angular.module('app', ['ionic', 'ngCordova', 'app.controllers', 'app.services'])
 				};
 
 				$rootScope.unregisterDevice = function unregisterDevice() {
-					if ($rootScope.pushRegistered){
-						WLAuthorizationManager.obtainAccessToken(AppConstants.Push.Scope).then(
-							function(token) {
+					var defer = $q.defer();
+					if ($rootScope.pushRegistered) {
+						$rootScope.pushRegistered = false; // need not to wait for the callback which sometimes losted		
+						WLAuthorizationManager.obtainAccessToken(AppConstants.Push.Scope)
+						.then(function(token) {
 								MFPPush.unregisterDevice(
 									function(successResponse) {
 										console.log("MFP Push: Successfully unregistered device: " + successResponse);
-										$rootScope.pushRegistered = false;	
+										defer.resolve(successResponse);
 									}, 
 									function(failureResponse) {
 										console.log("MFP Push: Failed to unregister device:" + JSON.stringify(failureResponse));
+										defer.reject(failureResponse);
 									}
 								)
 							}
-						);
+						)
+						.fail(function(failureResponse){
+							defer.reject(failureResponse);
+						});
 					}
+					return defer.promise;
 				};				
 
 				MFPPush.initialize(
