@@ -1,16 +1,42 @@
 <ion-view view-title="Unsecured landing page" hide-back-button="true">
 	<ion-content>
-		<h4>Hello from unsecured landing page</h4>
-		<div class="card">
-			<div class="item item-divider">
-				<button class="button button-block button-assertive" ng-click="getUnsecuredData('Mr. MFP')">Get unsecured data</button>
+		<form name="syncForm">
+			<h4>Hello from unsecured landing page</h4>
+		
+			<div class="card">
+				<div class="item item-divider">
+					<button class="button button-block button-assertive" ng-click="getUnsecuredData('Mr. MFP')">Get unsecured data</button>
+				</div>
+				<div class="item item-text-wrap">
+					This is the result from MFP invocation: {{hello}}
+				</div>
+				<div class="item item-divider">
+					<button class="button button-block button-assertive" ng-click="getSecuredData()">Get secured data</button>
+				</div>
 			</div>
-			<div class="item item-text-wrap">
-				This is the result from MFP invocation: {{hello}}
+
+			<div class="card">
+				<div class="list">
+					<label class="item">
+						<button class="button button-block button-assertive" ng-click="updateSyncObject()" type="submit">Update With Timestamp</button>
+					</label>
+					<label class="item item-input">
+						<span class="input-label">Field1</span>
+						<input name="username" type="text" ng-model="objectSync.field1" required>
+					</label>
+					<label class="item item-input">
+						<span class="input-label">Field2</span>
+						<input name="username" type="text" ng-model="objectSync.field2" required>
+					</label>
+					<label class="item">
+						<div class="card">
+							<div class="item item-text-wrap">
+								This is the timestamp: {{syncData}}
+							</div>
+						</div>
+					</label>
+				</div>
 			</div>
-			<div class="item item-divider">
-				<button class="button button-block button-assertive" ng-click="getSecuredData()">Get secured data</button>
-			</div>
-		</div>
+		</form>
 	</ion-content>
 </ion-view>
